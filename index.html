@@ -103,16 +103,11 @@
         }
 
         let highlightedRoute = null;
-        let glowingRoute = null;
 
         function clearHighlight() {
             if (highlightedRoute) {
                 map.removeLayer(highlightedRoute);
                 highlightedRoute = null;
-            }
-            if (glowingRoute) {
-                map.removeLayer(glowingRoute);
-                glowingRoute = null;
             }
         }
 
@@ -183,16 +178,7 @@
                             highlightedRoute = L.geoJSON(feature, {
                                 style: {
                                     color: '#ff5722',
-                                    weight: 10,
                                     opacity: 1
-                                }
-                            }).addTo(map);
-
-                            glowingRoute = L.geoJSON(feature, {
-                                style: {
-                                    color: '#ff5722',
-                                    weight: 15,
-                                    opacity: 0.4
                                 }
                             }).addTo(map);
 
@@ -202,13 +188,6 @@
                                 className: 'highlight-tooltip',
                                 offset: [0, -10]
                             }).openTooltip();
-
-                            setTimeout(() => {
-                                if (glowingRoute) {
-                                    map.removeLayer(glowingRoute);
-                                    glowingRoute = null;
-                                }
-                            }, 3000);
                         });
                     }
                 }).addTo(map);
@@ -286,16 +265,7 @@
                             highlightedRoute = L.geoJSON(feature, {
                                 style: {
                                     color: '#ff5722',
-                                    weight: 10,
                                     opacity: 1
-                                }
-                            }).addTo(map);
-
-                            glowingRoute = L.geoJSON(feature, {
-                                style: {
-                                    color: '#ff5722',
-                                    weight: 15,
-                                    opacity: 0.4
                                 }
                             }).addTo(map);
 
@@ -304,13 +274,6 @@
                                 className: 'highlight-tooltip',
                                 offset: [0, -10]
                             }).openTooltip();
-
-                            setTimeout(() => {
-                                if (glowingRoute) {
-                                    map.removeLayer(glowingRoute);
-                                    glowingRoute = null;
-                                }
-                            }, 3000);
                         });
 
                         const infoSpan = document.createElement('span');
