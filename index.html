@@ -86,243 +86,243 @@
         <h2>Trans Pennine Trail Walking Routes</h2>
         <ul id="poi"></ul>
     </div>
-    <script>
-        var map = L.map('map').setView([53.5, -1.5], 10); // Default center
-        let userLocation = null;
+<script>
+    var map = L.map('map').setView([53.5, -1.5], 10); // Default center
+    let userLocation = null;
 
-        // Add a tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
+    // Add a tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        const visitedPOIs = JSON.parse(localStorage.getItem('visitedPOIs')) || {};
+    const visitedPOIs = JSON.parse(localStorage.getItem('visitedPOIs')) || {};
 
-        function saveVisitedPOIs() {
-            localStorage.setItem('visitedPOIs', JSON.stringify(visitedPOIs));
+    function saveVisitedPOIs() {
+        localStorage.setItem('visitedPOIs', JSON.stringify(visitedPOIs));
+    }
+
+    let highlightedRoute = null;
+
+    function clearHighlight() {
+        if (highlightedRoute) {
+            map.removeLayer(highlightedRoute);
+            highlightedRoute = null;
+        }
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = (lat1 * Math.PI) / 180;
+        const φ2 = (lat2 * Math.PI) / 180;
+        const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+        const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+        const a =
+            Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c; // Distance in meters
+    }
+
+    function metersToMiles(meters) {
+        return meters / 1609.34;
+    }
+
+    function calculateRouteLength(coordinates) {
+        if (!Array.isArray(coordinates) || coordinates.length < 2) {
+            console.warn('Invalid coordinates for route:', coordinates);
+            return 0;
         }
 
-        let highlightedRoute = null;
-
-        function clearHighlight() {
-            if (highlightedRoute) {
-                map.removeLayer(highlightedRoute);
-                highlightedRoute = null;
-            }
+        let totalDistance = 0;
+        for (let i = 0; i < coordinates.length - 1; i++) {
+            const [lon1, lat1] = coordinates[i];
+            const [lon2, lat2] = coordinates[i + 1];
+            const distance = calculateDistance(lat1, lon1, lat2, lon2);
+            totalDistance += distance;
         }
+        return totalDistance; // Total distance in meters
+    }
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = (lat1 * Math.PI) / 180;
-            const φ2 = (lat2 * Math.PI) / 180;
-            const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-            const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    function styleFeature(feature) {
+        const id = feature.id || feature.properties.id;
+        const isVisited = visitedPOIs[id];
+        return {
+            color: isVisited ? '#00ff00' : '#3388ff',
+            weight: 6,
+            opacity: 0.8
+        };
+    }
 
-            const a =
-                Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    fetch('tptwalkerroutewhole.json') // Replace with your local file path
+        .then(response => response.json())
+        .then(data => {
+            const geoJsonLayer = L.geoJSON(data, {
+                style: styleFeature,
+                onEachFeature: (feature, layer) => {
+                    const routeName = feature.properties.Name || 'Unnamed Route';
 
-            return R * c; // Distance in meters
-        }
+                    // Bind a tooltip to each feature with its name
+                    layer.bindTooltip(routeName, {
+                        sticky: true,
+                        direction: 'top',
+                        offset: [0, -10]
+                    });
 
-        function metersToMiles(meters) {
-            return meters / 1609.34;
-        }
+                    layer.on('click', () => {
+                        clearHighlight();
 
-        function calculateRouteLength(coordinates) {
-            if (!Array.isArray(coordinates) || coordinates.length < 2) {
-                console.warn('Invalid coordinates for route:', coordinates);
-                return 0;
-            }
-
-            let totalDistance = 0;
-            for (let i = 0; i < coordinates.length - 1; i++) {
-                const [lon1, lat1] = coordinates[i];
-                const [lon2, lat2] = coordinates[i + 1];
-                const distance = calculateDistance(lat1, lon1, lat2, lon2);
-                totalDistance += distance;
-            }
-            return totalDistance; // Total distance in meters
-        }
-
-        function styleFeature(feature) {
-            const id = feature.id || feature.properties.id;
-            const isVisited = visitedPOIs[id];
-            return {
-                color: isVisited ? '#00ff00' : '#3388ff',
-                weight: 6,
-                opacity: 0.8
-            };
-        }
-
-        fetch('tptwalkerroutewhole.json') // Replace with your local file path
-            .then(response => response.json())
-            .then(data => {
-                const geoJsonLayer = L.geoJSON(data, {
-                    style: styleFeature,
-                    onEachFeature: (feature, layer) => {
-                        const routeName = feature.properties.Name || 'Unnamed Route';
-
-                        // Bind a tooltip to each feature with its name
-                        layer.bindTooltip(routeName, {
-                            sticky: true,
-                            direction: 'top',
-                            offset: [0, -10]
-                        });
-
-                        layer.on('click', () => {
-                            clearHighlight();
-
-                            // Highlight the tapped route with increased width
-                            highlightedRoute = L.geoJSON(feature, {
-                                style: {
-                                    color: '#ff5722',
-                                    opacity: 1
-                                }
-                            }).addTo(map);
-
-                            // Show a tooltip with the route name
-                            highlightedRoute.bindTooltip(routeName, {
-                                permanent: true,
-                                className: 'highlight-tooltip',
-                                offset: [0, -10]
-                            }).openTooltip();
-                        });
-                    }
-                }).addTo(map);
-
-                const poiList = document.getElementById('poi');
-                const features = data.features;
-
-                function updatePOIs() {
-                    poiList.innerHTML = '';
-
-                    const sortedFeatures = features.map(feature => {
-                        const { geometry } = feature;
-
-                        if (geometry.type !== "LineString" && geometry.type !== "MultiLineString") {
-                            console.warn(`Skipping non-route feature: ${feature.properties.Name}`);
-                            return null;
-                        }
-
-                        const coordinates = geometry.type === "LineString" ? geometry.coordinates : geometry.coordinates.flat();
-                        const routeLengthMeters = calculateRouteLength(coordinates);
-                        const routeLengthMiles = metersToMiles(routeLengthMeters);
-
-                        const [lon, lat] = coordinates[0];
-                        const distanceMeters = userLocation
-                            ? calculateDistance(userLocation.lat, userLocation.lng, lat, lon)
-                            : Infinity;
-                        const distanceMiles = metersToMiles(distanceMeters);
-
-                        return {
-                            feature,
-                            distanceMeters,
-                            distanceMiles,
-                            routeLengthMeters,
-                            routeLengthMiles
-                        };
-                    }).filter(item => item !== null)
-                      .sort((a, b) => a.distanceMeters - b.distanceMeters);
-
-                    sortedFeatures.forEach((item, index) => {
-                        const { feature, distanceMiles, routeLengthMiles } = item;
-                        const name = feature.properties.Name || `POI ${index + 1}`;
-                        const id = feature.id || index;
-                        const listItem = document.createElement('li');
-
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.checked = !!visitedPOIs[id];
-                        checkbox.addEventListener('change', () => {
-                            if (checkbox.checked) {
-                                visitedPOIs[id] = true;
-                                listItem.classList.add('visited');
-                            } else {
-                                delete visitedPOIs[id];
-                                listItem.classList.remove('visited');
+                        // Highlight the tapped route
+                        highlightedRoute = L.geoJSON(feature, {
+                            style: {
+                                color: '#ff5722',
+                                opacity: 1
                             }
-                            saveVisitedPOIs();
-                            geoJsonLayer.setStyle(styleFeature);
-                        });
+                        }).addTo(map);
 
-                        if (visitedPOIs[id]) {
-                            listItem.classList.add('visited');
-                        }
-
-                        const nameSpan = document.createElement('span');
-                        nameSpan.textContent = name;
-                        nameSpan.className = 'poi-name';
-                        nameSpan.addEventListener('click', () => {
-                            // Scroll the map into view
-                            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
-
-                            const bounds = L.geoJSON(feature).getBounds();
-                            map.fitBounds(bounds);
-
-                            clearHighlight();
-                            highlightedRoute = L.geoJSON(feature, {
-                                style: {
-                                    color: '#ff5722',
-                                    opacity: 1
-                                }
-                            }).addTo(map);
-
-                            highlightedRoute.bindTooltip(name, {
-                                permanent: true,
-                                className: 'highlight-tooltip',
-                                offset: [0, -10]
-                            }).openTooltip();
-                        });
-
-                        const infoSpan = document.createElement('span');
-                        infoSpan.className = 'poi-info';
-                        infoSpan.textContent = `Distance: ${distanceMiles.toFixed(2)} miles | Length: ${routeLengthMiles.toFixed(2)} miles`;
-
-                        const checkboxDiv = document.createElement('div');
-                        checkboxDiv.className = 'poi-checkbox';
-                        const checkboxLabel = document.createElement('label');
-                        checkboxLabel.textContent = 'Visited';
-                        checkboxDiv.appendChild(checkbox);
-                        checkboxDiv.appendChild(checkboxLabel);
-
-                        listItem.appendChild(nameSpan);
-                        listItem.appendChild(infoSpan);
-                        listItem.appendChild(checkboxDiv);
-                        poiList.appendChild(listItem);
+                        // Show a tooltip with the route name
+                        highlightedRoute.bindTooltip(routeName, {
+                            permanent: true,
+                            className: 'highlight-tooltip',
+                            offset: [0, -10]
+                        }).openTooltip();
                     });
                 }
+            }).addTo(map);
 
-                map.locate({ watch: true });
+            const poiList = document.getElementById('poi');
+            const features = data.features;
 
-                let userMarker = null;
+            function updatePOIs() {
+                poiList.innerHTML = '';
 
-                map.on('locationfound', (e) => {
-                    userLocation = e.latlng;
+                const sortedFeatures = features.map(feature => {
+                    const { geometry } = feature;
 
-                    if (!userMarker) {
-                        userMarker = L.marker(userLocation)
-                            .addTo(map)
-                            .bindPopup('You are here!')
-                            .openPopup();
-                    } else {
-                        userMarker.setLatLng(userLocation);
+                    if (geometry.type !== "LineString" && geometry.type !== "MultiLineString") {
+                        console.warn(`Skipping non-route feature: ${feature.properties.Name}`);
+                        return null;
                     }
 
-                    updatePOIs();
-                });
+                    const coordinates = geometry.type === "LineString" ? geometry.coordinates : geometry.coordinates.flat();
+                    const routeLengthMeters = calculateRouteLength(coordinates);
+                    const routeLengthMiles = metersToMiles(routeLengthMeters);
 
-                map.on('locationerror', () => {
-                    alert('Could not determine your location.');
-                    updatePOIs();
+                    const [lon, lat] = coordinates[0];
+                    const distanceMeters = userLocation
+                        ? calculateDistance(userLocation.lat, userLocation.lng, lat, lon)
+                        : Infinity;
+                    const distanceMiles = metersToMiles(distanceMeters);
+
+                    return {
+                        feature,
+                        distanceMeters,
+                        distanceMiles,
+                        routeLengthMeters,
+                        routeLengthMiles
+                    };
+                }).filter(item => item !== null)
+                  .sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+                sortedFeatures.forEach((item, index) => {
+                    const { feature, distanceMiles, routeLengthMiles } = item;
+                    const name = feature.properties.Name || `POI ${index + 1}`;
+                    const id = feature.id || index;
+                    const listItem = document.createElement('li');
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = !!visitedPOIs[id];
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            visitedPOIs[id] = true;
+                            listItem.classList.add('visited');
+                        } else {
+                            delete visitedPOIs[id];
+                            listItem.classList.remove('visited');
+                        }
+                        saveVisitedPOIs();
+                        geoJsonLayer.setStyle(styleFeature);
+                    });
+
+                    if (visitedPOIs[id]) {
+                        listItem.classList.add('visited');
+                    }
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = name;
+                    nameSpan.className = 'poi-name';
+                    nameSpan.addEventListener('click', () => {
+                        // Scroll the map into view
+                        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+
+                        const bounds = L.geoJSON(feature).getBounds();
+                        map.fitBounds(bounds);
+
+                        clearHighlight();
+                        highlightedRoute = L.geoJSON(feature, {
+                            style: {
+                                color: '#ff5722',
+                                opacity: 1
+                            }
+                        }).addTo(map);
+
+                        highlightedRoute.bindTooltip(name, {
+                            permanent: true,
+                            className: 'highlight-tooltip',
+                            offset: [0, -10]
+                        }).openTooltip();
+                    });
+
+                    const infoSpan = document.createElement('span');
+                    infoSpan.className = 'poi-info';
+                    infoSpan.textContent = `Distance: ${distanceMiles.toFixed(2)} miles | Length: ${routeLengthMiles.toFixed(2)} miles`;
+
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'poi-checkbox';
+                    const checkboxLabel = document.createElement('label');
+                    checkboxLabel.textContent = 'Visited';
+                    checkboxDiv.appendChild(checkbox);
+                    checkboxDiv.appendChild(checkboxLabel);
+
+                    listItem.appendChild(nameSpan);
+                    listItem.appendChild(infoSpan);
+                    listItem.appendChild(checkboxDiv);
+                    poiList.appendChild(listItem);
                 });
+            }
+
+            map.locate({ watch: true });
+
+            let userMarker = null;
+
+            map.on('locationfound', (e) => {
+                userLocation = e.latlng;
+
+                if (!userMarker) {
+                    userMarker = L.marker(userLocation)
+                        .addTo(map)
+                        .bindPopup('You are here!');
+                } else {
+                    userMarker.setLatLng(userLocation);
+                }
 
                 updatePOIs();
-            })
-            .catch(error => {
-                console.error('Error loading the GeoJSON file:', error);
             });
-    </script>
+
+            map.on('locationerror', () => {
+                alert('Could not determine your location.');
+                updatePOIs();
+            });
+
+            updatePOIs();
+        })
+        .catch(error => {
+            console.error('Error loading the GeoJSON file:', error);
+        });
+</script>
+
 </body>
 </html>
