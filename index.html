@@ -78,19 +78,6 @@
             gap: 5px;
             margin-top: auto;
         }
-
-        .leaflet-tooltip {
-            font-size: 1em;
-            padding: 5px 10px;
-            border-radius: 5px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-        }
-
-        .highlight-tooltip {
-            font-weight: bold;
-            color: #ff5722;
-        }
     </style>
 </head>
 <body>
@@ -169,7 +156,7 @@
             const isVisited = visitedPOIs[id];
             return {
                 color: isVisited ? '#00ff00' : '#3388ff',
-                weight: 6, // Increased weight for better visibility
+                weight: 6,
                 opacity: 0.8
             };
         }
@@ -189,7 +176,6 @@
                             offset: [0, -10]
                         });
 
-                        // Enhance touch interactions
                         layer.on('click', () => {
                             clearHighlight();
 
@@ -202,7 +188,6 @@
                                 }
                             }).addTo(map);
 
-                            // Add a glowing effect
                             glowingRoute = L.geoJSON(feature, {
                                 style: {
                                     color: '#ff5722',
@@ -218,24 +203,12 @@
                                 offset: [0, -10]
                             }).openTooltip();
 
-                            // Remove the glowing effect after 3 seconds
                             setTimeout(() => {
                                 if (glowingRoute) {
                                     map.removeLayer(glowingRoute);
                                     glowingRoute = null;
                                 }
                             }, 3000);
-                        });
-
-                        // On hover (optional for non-touch devices), increase width
-                        layer.on('mouseover', () => {
-                            layer.setStyle({
-                                weight: 8
-                            });
-                        });
-
-                        layer.on('mouseout', () => {
-                            layer.setStyle(styleFeature(feature));
                         });
                     }
                 }).addTo(map);
@@ -303,6 +276,9 @@
                         nameSpan.textContent = name;
                         nameSpan.className = 'poi-name';
                         nameSpan.addEventListener('click', () => {
+                            // Scroll the map into view
+                            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+
                             const bounds = L.geoJSON(feature).getBounds();
                             map.fitBounds(bounds);
 
@@ -355,7 +331,7 @@
                     });
                 }
 
-                map.locate({ watch: true }); // Watch location updates without snapping the map
+                map.locate({ watch: true });
 
                 let userMarker = null;
 
