@@ -150,7 +150,7 @@
         const id = feature.id || feature.properties.id;
         const isVisited = visitedPOIs[id];
         return {
-            color: isVisited ? '#00ff00' : '#3388ff',
+            color: isVisited ? '#32CD32' : '#3388ff', // Nicer green for visited, blue for default
             weight: 6,
             opacity: 0.8
         };
