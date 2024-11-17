@@ -18,13 +18,13 @@
         }
 
         #poi-list {
-            padding: 0 20px; /* Remove top padding */
+            padding: 0 20px;
             background: #f9f9f9;
         }
 
         #poi-list h2 {
-            font-size: 1em; /* Match normal body text size */
-            margin: 0; /* Remove top and bottom margins */
+            font-size: 1em;
+            margin: 0;
             text-align: center;
         }
 
@@ -34,7 +34,7 @@
             gap: 10px;
             list-style: none;
             padding: 0;
-            margin: 10px 0; /* Add a small margin below the list */
+            margin: 10px 0;
         }
 
         #poi li {
@@ -87,7 +87,6 @@
         <ul id="poi"></ul>
     </div>
     <script>
-        // Initialize the map
         var map = L.map('map').setView([53.5, -1.5], 10); // Default center
         let userLocation = null;
 
@@ -97,19 +96,15 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Retrieve visited POIs from localStorage
         const visitedPOIs = JSON.parse(localStorage.getItem('visitedPOIs')) || {};
 
-        // Save visited POIs back to localStorage
         function saveVisitedPOIs() {
             localStorage.setItem('visitedPOIs', JSON.stringify(visitedPOIs));
         }
 
-        // Variables to hold the currently highlighted and glowing layers
         let highlightedRoute = null;
         let glowingRoute = null;
 
-        // Function to clear the current highlight
         function clearHighlight() {
             if (highlightedRoute) {
                 map.removeLayer(highlightedRoute);
@@ -121,9 +116,8 @@
             }
         }
 
-        // Function to calculate distance between two coordinates (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Earth radius in meters
+            const R = 6371e3;
             const φ1 = (lat1 * Math.PI) / 180;
             const φ2 = (lat2 * Math.PI) / 180;
             const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -137,15 +131,12 @@
             return R * c; // Distance in meters
         }
 
-        // Convert meters to miles
         function metersToMiles(meters) {
             return meters / 1609.34;
         }
 
-        // Function to calculate the length of a route
         function calculateRouteLength(coordinates) {
             if (!Array.isArray(coordinates) || coordinates.length < 2) {
-                // If coordinates are not an array or there's not enough data, return 0
                 console.warn('Invalid coordinates for route:', coordinates);
                 return 0;
             }
@@ -160,7 +151,6 @@
             return totalDistance; // Total distance in meters
         }
 
-        // Function to style the GeoJSON layer based on visited state
         function styleFeature(feature) {
             const id = feature.id || feature.properties.id;
             const isVisited = visitedPOIs[id];
@@ -171,41 +161,40 @@
             };
         }
 
-        // Load GeoJSON data from local file
         fetch('tptwalkerroutewhole.json') // Replace with your local file path
             .then(response => response.json())
             .then(data => {
-                // Add the GeoJSON layer with dynamic styling
                 const geoJsonLayer = L.geoJSON(data, {
                     style: styleFeature,
                     onEachFeature: (feature, layer) => {
-                        // Bind a tooltip to each feature with its name
                         const routeName = feature.properties.Name || 'Unnamed Route';
                         layer.bindTooltip(routeName, { sticky: true });
 
-                        // Add click-to-highlight functionality
                         layer.on('click', () => {
-                            clearHighlight(); // Clear previous highlight
+                            clearHighlight();
 
-                            // Highlight in orange
                             highlightedRoute = L.geoJSON(feature, {
                                 style: {
-                                    color: '#ff5722', // Orange for highlight
+                                    color: '#ff5722',
                                     weight: 5,
                                     opacity: 1
                                 }
                             }).addTo(map);
 
-                            // Add a glowing effect
                             glowingRoute = L.geoJSON(feature, {
                                 style: {
                                     color: '#ff5722',
-                                    weight: 10, // Wider for glow
-                                    opacity: 0.5, // Semi-transparent
+                                    weight: 10,
+                                    opacity: 0.5
                                 }
                             }).addTo(map);
 
-                            // Remove the glow effect after 3 seconds
+                            highlightedRoute.bindTooltip(routeName, {
+                                permanent: true,
+                                className: 'highlight-tooltip',
+                                offset: [0, -10]
+                            }).openTooltip();
+
                             setTimeout(() => {
                                 if (glowingRoute) {
                                     map.removeLayer(glowingRoute);
@@ -216,30 +205,24 @@
                     }
                 }).addTo(map);
 
-                // Extract POIs
                 const poiList = document.getElementById('poi');
                 const features = data.features;
 
                 function updatePOIs() {
-                    // Clear existing list
                     poiList.innerHTML = '';
 
-                    // Sort POIs by distance from user location
                     const sortedFeatures = features.map(feature => {
                         const { geometry } = feature;
 
                         if (geometry.type !== "LineString" && geometry.type !== "MultiLineString") {
-                            // Skip features that are not routes
                             console.warn(`Skipping non-route feature: ${feature.properties.Name}`);
                             return null;
                         }
 
-                        // Calculate route length
                         const coordinates = geometry.type === "LineString" ? geometry.coordinates : geometry.coordinates.flat();
                         const routeLengthMeters = calculateRouteLength(coordinates);
                         const routeLengthMiles = metersToMiles(routeLengthMeters);
 
-                        // Calculate distance to the route (using the first coordinate)
                         const [lon, lat] = coordinates[0];
                         const distanceMeters = userLocation
                             ? calculateDistance(userLocation.lat, userLocation.lng, lat, lon)
@@ -253,17 +236,15 @@
                             routeLengthMeters,
                             routeLengthMiles
                         };
-                    }).filter(item => item !== null) // Filter out invalid features
+                    }).filter(item => item !== null)
                       .sort((a, b) => a.distanceMeters - b.distanceMeters);
 
-                    // Populate the list with sorted POIs
                     sortedFeatures.forEach((item, index) => {
                         const { feature, distanceMiles, routeLengthMiles } = item;
                         const name = feature.properties.Name || `POI ${index + 1}`;
-                        const id = feature.id || index; // Use ID or index as unique identifier
+                        const id = feature.id || index;
                         const listItem = document.createElement('li');
 
-                        // Create a checkbox for marking as visited
                         const checkbox = document.createElement('input');
                         checkbox.type = 'checkbox';
                         checkbox.checked = !!visitedPOIs[id];
@@ -276,17 +257,13 @@
                                 listItem.classList.remove('visited');
                             }
                             saveVisitedPOIs();
-
-                            // Update GeoJSON layer styling
                             geoJsonLayer.setStyle(styleFeature);
                         });
 
-                        // Mark as visited if it exists in the visitedPOIs
                         if (visitedPOIs[id]) {
                             listItem.classList.add('visited');
                         }
 
-                        // Add click-to-zoom functionality for the POI name
                         const nameSpan = document.createElement('span');
                         nameSpan.textContent = name;
                         nameSpan.className = 'poi-name';
@@ -294,17 +271,15 @@
                             const bounds = L.geoJSON(feature).getBounds();
                             map.fitBounds(bounds);
 
-                            // Highlight the route when clicking on the POI
                             clearHighlight();
                             highlightedRoute = L.geoJSON(feature, {
                                 style: {
-                                    color: '#ff5722', // Orange for highlight
+                                    color: '#ff5722',
                                     weight: 5,
                                     opacity: 1
                                 }
                             }).addTo(map);
 
-                            // Add glowing effect
                             glowingRoute = L.geoJSON(feature, {
                                 style: {
                                     color: '#ff5722',
@@ -313,7 +288,12 @@
                                 }
                             }).addTo(map);
 
-                            // Remove glow after 3 seconds
+                            highlightedRoute.bindTooltip(name, {
+                                permanent: true,
+                                className: 'highlight-tooltip',
+                                offset: [0, -10]
+                            }).openTooltip();
+
                             setTimeout(() => {
                                 if (glowingRoute) {
                                     map.removeLayer(glowingRoute);
@@ -322,12 +302,10 @@
                             }, 3000);
                         });
 
-                        // Create a span for distance and route length
                         const infoSpan = document.createElement('span');
                         infoSpan.className = 'poi-info';
                         infoSpan.textContent = `Distance: ${distanceMiles.toFixed(2)} miles | Length: ${routeLengthMiles.toFixed(2)} miles`;
 
-                        // Create a div for the checkbox and label
                         const checkboxDiv = document.createElement('div');
                         checkboxDiv.className = 'poi-checkbox';
                         const checkboxLabel = document.createElement('label');
@@ -335,7 +313,6 @@
                         checkboxDiv.appendChild(checkbox);
                         checkboxDiv.appendChild(checkboxLabel);
 
-                        // Append elements to the list item
                         listItem.appendChild(nameSpan);
                         listItem.appendChild(infoSpan);
                         listItem.appendChild(checkboxDiv);
@@ -343,7 +320,6 @@
                     });
                 }
 
-                // Geolocation to get user location
                 map.locate({ setView: true, maxZoom: 15, watch: true });
 
                 map.on('locationfound', e => {
@@ -365,7 +341,7 @@
                     updatePOIs();
                 });
 
-                updatePOIs(); // Initialize the POI list
+                updatePOIs();
             })
             .catch(error => {
                 console.error('Error loading the GeoJSON file:', error);
