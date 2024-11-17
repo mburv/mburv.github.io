@@ -320,20 +320,26 @@
                     });
                 }
 
-                map.locate({ setView: true, maxZoom: 15, watch: true });
+                map.locate({ watch: true }); // Watch location updates without snapping the map
 
-                map.on('locationfound', e => {
-                    if (!userLocation) {
-                        userLocation = e.latlng;
-                        L.marker(userLocation)
+                let userMarker = null; // To store the user's location marker
+
+                map.on('locationfound', (e) => {
+                    // Update user location without snapping the map
+                    userLocation = e.latlng;
+
+                    if (!userMarker) {
+                        // If the marker doesn't exist, create it
+                        userMarker = L.marker(userLocation)
                             .addTo(map)
                             .bindPopup('You are here!')
                             .openPopup();
                     } else {
-                        userLocation = e.latlng;
+                        // Update the marker position
+                        userMarker.setLatLng(userLocation);
                     }
 
-                    updatePOIs();
+                    updatePOIs(); // Update the POIs based on the new location
                 });
 
                 map.on('locationerror', () => {
