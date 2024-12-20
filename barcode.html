@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Barcode Scanner</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    text-align: center;
+  }
+  #interactive {
+    position: relative;
+    margin: 20px auto;
+    max-width: 400px;
+    border: 2px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  #interactive video {
+    width: 100%;
+    height: auto;
+  }
+  #interactive canvas.drawingBuffer {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+</style>
+</head>
+<body>
+<h1>Scan a Barcode</h1>
+<p>Allow camera access and then scan one of the following barcodes:</p>
+<ul style="text-align:left;display:inline-block;">
+  <li>1733600754001858048 - Echo Dot Dad Xmas</li>
+  <li>1734470726701015087 - Socks Matt Xmas</li>
+  <li>1733644905000515181 - Fidget toy Matt Xmas</li>
+  <li>1733643765704213749 - Beard kit Matt birthday</li>
+  <li>1733643768704972411 - Beauty kit Mum</li>
+  <li>1733662942702350705 - Whisky gift Dad birthday</li>
+</ul>
+
+<div id="interactive" class="viewport"></div>
+
+<script src="https://unpkg.com/quagga/dist/quagga.min.js"></script>
+<script>
+  // Predefined barcodes and their descriptions
+  const codesToCheck = {
+    "1733600754001858048": "Echo Dot Dad Xmas",
+    "1734470726701015087": "Socks Matt Xmas",
+    "1733644905000515181": "Fidget toy Matt Xmas",
+    "1733643765704213749": "Beard kit Matt birthday",
+    "1733643768704972411": "Beauty kit Mum",
+    "1733662942702350705": "Whisky gift dad birthday"
+  };
+
+  // Initialize Quagga
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector('#interactive'),
+      constraints: {
+        facingMode: "environment" // Use the back camera if available
+      }
+    },
+    decoder: {
+      readers: [
+        "code_128_reader",
+        "ean_reader",
+        "upc_reader",
+        "upc_e_reader",
+        "code_39_reader",
+        "code_93_reader",
+        "codabar_reader",
+        "i2of5_reader",
+        "2of5_reader",
+        "code_39_vin_reader",
+        "ean_8_reader",
+        "ean_13_reader"
+      ]
+    }
+  }, function (err) {
+    if (err) {
+      console.error("Initialization error:", err);
+      return;
+    }
+    Quagga.start();
+  });
+
+  // When a barcode is detected
+  Quagga.onDetected(function(result) {
+    const code = result.codeResult.code;
+    if (codesToCheck.hasOwnProperty(code)) {
+      alert("Barcode: " + code + "\n" + codesToCheck[code]);
+    }
+  });
+</script>
+</body>
+</html>
